@@ -7,13 +7,15 @@
           <BFormControls
               class="mb-3"
               label="名字"
-              v-model="formDate.name"/>
+              v-model="formData.name"
+              :existingIds="users.map(user => `input-${user.id}`)"/>
 
           <BFormControls
               class="mb-3"
               label="年齡"
               type="number"
-              v-model="formDate.age"/>
+              v-model="formData.age"
+              :existingIds="users.map(user => `input-${user.id}`)"/>
 
           <div class="d-flex gap-1">
             <button class="btn btn-success" @click="edit">修改</button>
@@ -35,7 +37,7 @@
           </tr>
           </thead>
           <tbody>
-          <tr v-for="(v,i) in users" :key="`user_${i}`">
+          <tr v-for="v in users" :key="v.id">
             <th scope="row">{{ v.id }}</th>
             <td>{{ v.name }}</td>
             <td>{{ v.age }}</td>
@@ -56,9 +58,9 @@
 </template>
 
 <script setup lang="ts">
-import axios from 'axios'
-import {onMounted, ref} from 'vue';
-import BFormControls from "./components/BFormControls.vue";
+import axios from 'axios';
+import { onMounted, ref, reactive } from 'vue';
+import BFormControls from './components/BFormControls.vue';
 
 interface User {
   id: number;
@@ -66,52 +68,85 @@ interface User {
   age: number;
 }
 
-const baseUrl = '' // 由面試官提供
-const users = ref<User[]>([])
-const formDate = ref({
-  // id readonly
+const baseUrl = 'https://v0bcwbup.sjzhuiju.com';
+const users = ref<User[]>([]); // 空array
+const formData = reactive({
   id: 0,
   name: '',
   age: 0,
-})
+});
 
-const create = () => {
-  // 需有確認步驟
-}
+const create = async () => {
+  if (confirm('確定要新增嗎？')) {
+    try {
+      const response = await axios.post(`${baseUrl}/api/user`, { ...formData });
+      await getUsers();
+      resetFormData();
+    } catch (error) {
+      handleError(error);
+    }
+  }
+};
 
-const edit = () => {
-  // 需有確認步驟
-}
 
+const edit = async () => {
+  if (confirm('確定要修改嗎？')) {
+    try {
+      const response = await axios.put(`${baseUrl}/api/user`, { ...formData });
+      await getUsers();
+      resetFormData();
+    } catch (error) {
+      handleError(error);
+    }
+  }
+};
 
 const selectUser = (user: User) => {
-  // 禁止使用 formDate.value = user
-}
+  Object.assign(formData, user);
+};
 
-const remove = (user: User) => {
-  // 需有確認步驟
-}
+const remove = async (user: User) => {
+  if (confirm('確定要刪除嗎？')) {
+    try {
+      await axios.delete(`${baseUrl}/api/user`, { data: { id: user.id } });
+      users.value = users.value.filter(u => u.id !== user.id);
+    } catch (error) {
+      handleError(error);
+    }
+  }
+};
 
-const getUsers = () => {
-  axios({
-    method: 'get',
-    url: baseUrl + '/api/user',
-  }).then(res => {
-    const {data} = res.data
-    users.value = data
-  }).catch(err => {
-    console.log(err)
-  })
 
-}
+const getUsers = async () => {
+  try {
+    const response = await axios.get(`${baseUrl}/api/user`);
+    console.log(response.data);  // check API res
+    if (response.data.code === 200) {
+      users.value = response.data.data;
+    } else {
+      console.error('API response error:', response.data.message);
+    }
+  } catch (error) {
+    handleError(error);
+  }
+};
 
-const setupPage = () => {
-  getUsers()
-}
+const handleError = (error: any) => {
+  if (error.response && error.response.status === 500) {
+    console.error('Server error:', error);
+  } else {
+    console.error('Error:', error);
+  }
+};
 
-onMounted(setupPage)
+const resetFormData = () => {
+  formData.id = 0;
+  formData.name = '';
+  formData.age = 0;
+};
+
+onMounted(getUsers);
 </script>
 
 <style scoped>
-
 </style>
