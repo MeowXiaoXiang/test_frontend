@@ -79,7 +79,7 @@ const formData = reactive({
 const create = async () => {
   if (confirm('確定要新增嗎？')) {
     try {
-      const response = await axios.post(`${baseUrl}/api/user`, { ...formData });
+      await axios.post(`${baseUrl}/api/user`, { ...formData });
       await getUsers();
       resetFormData();
     } catch (error) {
@@ -92,7 +92,7 @@ const create = async () => {
 const edit = async () => {
   if (confirm('確定要修改嗎？')) {
     try {
-      const response = await axios.put(`${baseUrl}/api/user`, { ...formData });
+      await axios.put(`${baseUrl}/api/user`, { ...formData });
       await getUsers();
       resetFormData();
     } catch (error) {
