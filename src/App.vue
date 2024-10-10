@@ -8,14 +8,14 @@
               class="mb-3"
               label="名字"
               v-model="formData.name"
-              :existingIds="users.map(user => `input-${user.id}`)"/>
+              :id="getNewComponentId('name')"/> <!-- 使用 ID 生成方法 -->
 
           <BFormControls
               class="mb-3"
               label="年齡"
               type="number"
               v-model="formData.age"
-              :existingIds="users.map(user => `input-${user.id}`)"/>
+              :id="getNewComponentId('age')"/> <!-- 使用 ID 生成方法 -->
 
           <div class="d-flex gap-1">
             <button class="btn btn-success" @click="edit">修改</button>
@@ -61,6 +61,7 @@
 import axios from 'axios';
 import { onMounted, ref, reactive } from 'vue';
 import BFormControls from './components/BFormControls.vue';
+import { getNewComponentId } from './utils/idGenerator';
 
 interface User {
   id: number;
@@ -69,32 +70,40 @@ interface User {
 }
 
 const baseUrl = 'https://v0bcwbup.sjzhuiju.com';
-const users = ref<User[]>([]); // 空array
+const users = ref<User[]>([]);
 const formData = reactive({
   id: 0,
   name: '',
   age: 0,
 });
 
+let isFirstLoad = true;
+
 const create = async () => {
   if (confirm('確定要新增嗎？')) {
     try {
-      await axios.post(`${baseUrl}/api/user`, { ...formData });
-      await getUsers();
-      resetFormData();
+      const response = await axios.post(`${baseUrl}/api/user`, { ...formData });
+      if (response.data.code === 200) {
+        users.value.push({ id: response.data.data.id, name: formData.name, age: formData.age });
+        resetFormData();
+      }
     } catch (error) {
       handleError(error);
     }
   }
 };
 
-
 const edit = async () => {
   if (confirm('確定要修改嗎？')) {
     try {
-      await axios.put(`${baseUrl}/api/user`, { ...formData });
-      await getUsers();
-      resetFormData();
+      const response = await axios.put(`${baseUrl}/api/user`, { ...formData });
+      if (response.data.code === 200) {
+        const index = users.value.findIndex(user => user.id === formData.id);
+        if (index !== -1) {
+          users.value[index] = { id: formData.id, name: formData.name, age: formData.age };
+        }
+        resetFormData();
+      }
     } catch (error) {
       handleError(error);
     }
@@ -116,18 +125,20 @@ const remove = async (user: User) => {
   }
 };
 
-
 const getUsers = async () => {
-  try {
-    const response = await axios.get(`${baseUrl}/api/user`);
-    console.log(response.data);  // check API res
-    if (response.data.code === 200) {
-      users.value = response.data.data;
-    } else {
-      console.error('API response error:', response.data.message);
+  if (isFirstLoad) {
+    try {
+      const response = await axios.get(`${baseUrl}/api/user`);
+      console.log(response.data);
+      if (response.data.code === 200) {
+        users.value = response.data.data;
+        isFirstLoad = false;
+      } else {
+        console.error('API response error:', response.data.message);
+      }
+    } catch (error) {
+      handleError(error);
     }
-  } catch (error) {
-    handleError(error);
   }
 };
 

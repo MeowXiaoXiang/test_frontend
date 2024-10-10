@@ -1,10 +1,10 @@
 <template>
   <div>
-    <label :for="computedId" class="form-label">{{ label }}</label>
+    <label :for="id" class="form-label">{{ label }}</label>
     <input
       :type="type"
       class="form-control"
-      :id="computedId"
+      :id="id"
       v-model="internalValue"
       :placeholder="placeholder"
     >
@@ -14,15 +14,6 @@
 <script setup lang="ts">
 import { defineProps, defineEmits, ref, watch } from 'vue';
 
-const generateUniqueId = (existingIds: string | unknown[]) => {
-  let newId;
-  do {
-    newId = `input-${Math.random().toString(36).slice(2, 11)}`;
-  } while (existingIds.includes(newId));
-  return newId;
-};
-
-
 const props = defineProps({
   modelValue: [String, Number],
   type: {
@@ -31,19 +22,13 @@ const props = defineProps({
   },
   id: {
     type: String,
-    default: null
-  },
-  existingIds: {
-    type: Array,
-    default: () => []
+    required: true
   },
   label: String,
   placeholder: String
 });
 
 const emit = defineEmits(['update:modelValue']);
-const computedId = ref(props.id || generateUniqueId(props.existingIds));
-
 const internalValue = ref(props.modelValue);
 
 watch(() => props.modelValue, (newValue) => {
